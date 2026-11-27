@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+*.log
+*.zip
+
+# Keep large checkpoints in Git LFS, not ordinary Git blobs.
+# Remove this rule if the checkpoint is intentionally distributed another way.
+

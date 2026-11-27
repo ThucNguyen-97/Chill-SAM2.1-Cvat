@@ -1,0 +1,58 @@
+metadata:
+  name: pth-facebookresearch-sam2-base-interactor
+  namespace: cvat
+  annotations:
+    name: SAM2.1 Base+ Custom Interactor
+    version: "2"
+    type: interactor
+    spec: "[]"
+    min_pos_points: "0"
+    min_neg_points: "0"
+    startswith_box: "true"
+    help_message: "SAM2.1 Base+ interactive segmentation using a bounding box or points"
+
+spec:
+  description: Custom SAM2.1 Base+ interactor for CVAT Community Nuclio
+  runtime: 'python:3.10'
+  handler: main:handler
+  eventTimeout: 300s
+  env:
+    - name: PYTHONPATH
+      value: /opt/nuclio/sam2
+    - name: HF_HOME
+      value: /opt/nuclio/cache/huggingface
+
+  build:
+    image: cvat.pth.facebookresearch.sam2.base.interactor
+    baseImage: python:3.10-slim
+    directives:
+      preCopy:
+        - kind: RUN
+          value: apt-get update && apt-get install -y --no-install-recommends git libglib2.0-0 libgl1 && rm -rf /var/lib/apt/lists/*
+        - kind: RUN
+          value: >-
+            pip install --upgrade --no-cache-dir pip setuptools wheel &&
+            pip install --no-cache-dir numpy pillow filelock typing-extensions sympy networkx jinja2 fsspec
+            && pip install --no-cache-dir --no-deps torch==2.5.1+cpu torchvision==0.20.1+cpu
+            --index-url https://download.pytorch.org/whl/cpu
+        - kind: RUN
+          value: >-
+            pip install --no-cache-dir opencv-python-headless huggingface_hub hydra-core iopath tqdm
+            "git+https://github.com/facebookresearch/sam2.git@2b90b9f5ceec907a1c18123530e92e794ad901a4"
+        - kind: WORKDIR
+          value: /opt/nuclio/sam2
+
+  triggers:
+    myHttpTrigger:
+      numWorkers: 1
+      kind: http
+      workerAvailabilityTimeoutMilliseconds: 10000
+      attributes:
+        maxRequestBodySize: 268435456
+
+  platform:
+    attributes:
+      restartPolicy:
+        name: always
+        maximumRetryCount: 3
+      mountMode: volume
